@@ -1,1 +1,1 @@
-# health-check-cli
+# health-check-tui
