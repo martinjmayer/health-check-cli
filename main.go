@@ -41,7 +41,11 @@ func main() {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Tick(time.Second*15, func(t time.Time) tea.Msg {
+	return GetNewTick()
+}
+
+func GetNewTick() tea.Cmd {
+	return tea.Tick(time.Second*1, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
 }
@@ -65,11 +69,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tickMsg:
-		return m, checkEndpoint(m.endpoints[m.selected])
+		m.uptimePercent[m.selected] = calculateUptimePercentage()
+		return m, tea.Batch(checkEndpoint(m.endpoints[m.selected]), GetNewTick())
 
 	case string:
 		m.statuses[m.selected] = msg
-		m.uptimePercent[m.selected] = calculateUptimePercentage() // Replace with your actual calculation
+		m.uptimePercent[m.selected] = calculateUptimePercentage()
 	}
 	return m, nil
 }
@@ -212,20 +217,21 @@ func (m model) View() string {
 func getDebugUptime() map[int]float64 {
 
 	rand.NewSource(time.Now().UnixNano())
-	debugUptimes := map[int]float64{1: 97, 2: 99.9, 3: 100, 4: 94.2, 5: 98, 6: 99.25236227}
+	debugUptimes := map[int]float64{
+		1: randFloatPresetMinMax(), 2: randFloatPresetMinMax(), 3: randFloatPresetMinMax(),
+		4: randFloatPresetMinMax(), 5: randFloatPresetMinMax(), 6: randFloatPresetMinMax(),
+	}
 
 	return debugUptimes
 }
 
-/*
-func randFloats(min, max float64, n int) []float64 {
-	res := make([]float64, n)
-	for i := range res {
-		res[i] = min + rand.Float64() * (max - min)
-	}
-	return res
+func randFloat(min, max float64) float64 {
+	return min + rand.Float64()*(max-min)
 }
-*/
+
+func randFloatPresetMinMax() float64 {
+	return randFloat(97, 100)
+}
 
 func getDebugResponses() map[int]string {
 	debugResponses := map[int]string{1: unchecked, 2: healthy, 3: healthy, 4: unhealthy, 5: unchecked, 6: inconclusive}
