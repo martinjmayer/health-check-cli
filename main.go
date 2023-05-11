@@ -12,7 +12,7 @@ import (
 
 type model struct {
 	endpoints     map[int]string
-	statuses      map[int]string
+	healthStates  map[int]HealthState
 	uptimePercent map[int]float64
 	selected      int
 }
@@ -29,7 +29,7 @@ func main() {
 			5: "http://example5.com",
 			6: "http://example6.com",
 		},
-		statuses:      make(map[int]string),
+		healthStates:  make(map[int]HealthState),
 		uptimePercent: make(map[int]float64),
 	}
 
@@ -73,10 +73,35 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(checkEndpoint(m.endpoints[m.selected]), GetNewTick())
 
 	case string:
-		m.statuses[m.selected] = msg
+		m.healthStates[m.selected] = getHealthStateFromString(msg)
 		m.uptimePercent[m.selected] = calculateUptimePercentage()
 	}
 	return m, nil
+}
+
+func getHealthStateFromString(healthStateString string) HealthState {
+	return getHealthStateMapKeyedOnString()[healthStateString]
+}
+
+func getHealthStateText(healthState HealthState) string {
+	return getHealthStateMap()[healthState]
+}
+
+func getHealthStateMapKeyedOnString() map[string]HealthState {
+	hsMap := make(map[string]HealthState)
+	for key, element := range getHealthStateMap() {
+		hsMap[element] = key
+	}
+	return hsMap
+}
+
+func getHealthStateMap() map[HealthState]string {
+	return map[HealthState]string{
+		Unchecked:    "Unchecked",
+		Healthy:      "Healthy",
+		Unhealthy:    "Unhealthy",
+		Inconclusive: "Inconclusive",
+	}
 }
 
 func (m model) View() string {
@@ -100,16 +125,16 @@ func (m model) View() string {
 
 	const numColumns = 3
 
-	statuses := m.statuses
+	statuses := m.healthStates
 	uptimePercent := m.uptimePercent
 
 	statuses = getDebugResponses()
 	uptimePercent = getDebugUptime()
 
 	for i := 1; i <= 6; i++ {
-		status, ok := statuses[i]
+		healthState, ok := statuses[i]
 		if !ok {
-			status = "not checked"
+			healthState = Unchecked
 		}
 		uptime, ok := uptimePercent[i]
 		if !ok {
@@ -172,15 +197,15 @@ func (m model) View() string {
 			boxStyleNotChecked = boxStyleNotChecked.BorderForeground(lipgloss.Color("205"))
 		}
 
-		boxContent := fmt.Sprintf("%s\nStatus: %s\nUptime: %.2f%%", m.endpoints[i], status, uptime)
-		switch status {
-		case unchecked:
+		boxContent := fmt.Sprintf("%s\nStatus: %s\nUptime: %.2f%%", m.endpoints[i], getHealthStateText(healthState), uptime)
+		switch healthState {
+		case Unchecked:
 			lgPanels[i-1] = boxStyleNotChecked.Render(boxContent)
-		case healthy:
+		case Healthy:
 			lgPanels[i-1] = boxStyleGreen.Render(boxContent)
-		case inconclusive:
+		case Inconclusive:
 			lgPanels[i-1] = boxStyleAmber.Render(boxContent)
-		case unhealthy:
+		case Unhealthy:
 			lgPanels[i-1] = boxStyleRed.Render(boxContent)
 		}
 	}
@@ -233,32 +258,36 @@ func randFloatPresetMinMax() float64 {
 	return randFloat(97, 100)
 }
 
-func getDebugResponses() map[int]string {
-	debugResponses := map[int]string{1: unchecked, 2: healthy, 3: healthy, 4: unhealthy, 5: unchecked, 6: inconclusive}
+func getDebugResponses() map[int]HealthState {
+	debugResponses := map[int]HealthState{1: Unchecked, 2: Healthy, 3: Healthy, 4: Unhealthy, 5: Unchecked, 6: Inconclusive}
 
 	return debugResponses
 }
 
-const unchecked = "unchecked"
-const healthy = "healthy"
-const unhealthy = "unhealthy"
-const inconclusive = "inconclusive"
+type HealthState int
+
+const (
+	Unchecked HealthState = iota + 1
+	Healthy
+	Unhealthy
+	Inconclusive
+)
 
 func checkEndpoint(endpoint string) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := http.Get(endpoint)
 
 		if err != nil {
-			return unhealthy
+			return Unhealthy
 		}
 
 		defer closeBody(resp)
 
 		if resp.StatusCode == http.StatusOK {
-			return healthy
+			return Healthy
 		}
 
-		return unhealthy
+		return Unhealthy
 	}
 }
 
