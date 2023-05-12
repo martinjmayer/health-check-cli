@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	lipgloss "github.com/charmbracelet/lipgloss"
+	"github.com/pkg/errors"
 )
 
 type model struct {
@@ -36,8 +37,9 @@ func main() {
 
 	p := tea.NewProgram(m)
 
-	if err := p.Start(); err != nil {
-		fmt.Printf("Failed to start the program: %s\n", err)
+	if _, err := p.Run(); err != nil {
+		fmt.Printf("Failed to start the program: %v\n", err)
+		os.Exit(1)
 	}
 }
 
@@ -107,12 +109,9 @@ func getHealthStateMap() map[HealthState]string {
 
 func (m model) View() string {
 	var lgPanels [6]string
-
 	const titleText = "API Health Check"
-
 	statuses := m.healthStates
 	uptimePercent := m.uptimePercent
-
 	statuses = getDebugResponses()
 	uptimePercent = getDebugUptime()
 
@@ -121,13 +120,13 @@ func (m model) View() string {
 		if !ok {
 			healthState = Unchecked
 		}
+
 		uptime, ok := uptimePercent[i]
 		if !ok {
 			uptime = 0
 		}
 
 		boxStyle := getEndpointBoxStyle(healthState)
-
 		if m.selected == i {
 			boxStyle = boxStyle.BorderForeground(lipgloss.Color("205"))
 		}
@@ -147,16 +146,9 @@ func (m model) View() string {
 	}
 
 	titleStyle := getTitleBoxStyle()
-
-	// Title
-	s := titleStyle.Render(titleText)
-
-	// Services - first row
-	s += lipgloss.JoinHorizontal(lipgloss.Bottom, lgPanels[0], lgPanels[1], lgPanels[2])
-
-	// Services - second row
-	s += lipgloss.JoinHorizontal(lipgloss.Bottom, lgPanels[3], lgPanels[4], lgPanels[5])
-
+	s := titleStyle.Render(titleText)                                                    // Title
+	s += lipgloss.JoinHorizontal(lipgloss.Bottom, lgPanels[0], lgPanels[1], lgPanels[2]) // Services - first row
+	s += lipgloss.JoinHorizontal(lipgloss.Bottom, lgPanels[3], lgPanels[4], lgPanels[5]) // Services - second row
 	return s
 }
 
@@ -258,7 +250,11 @@ func getEndpointBoxStyle(healthState HealthState) lipgloss.Style {
 		return boxStyleHealthStateUnhealthy
 	}
 
-	panic(errors.New(fmt.Sprintf("Unknown Health State '%d'", healthState)))
+	panic(
+		errors.New(
+			fmt.Sprintf(
+				"Unknown Health State '%d'",
+				healthState)))
 }
 
 func getDebugUptime() map[int]float64 {
@@ -298,17 +294,13 @@ const (
 func checkEndpoint(endpoint string) tea.Cmd {
 	return func() tea.Msg {
 		resp, err := http.Get(endpoint)
-
 		if err != nil {
 			return Unhealthy
 		}
-
 		defer closeBody(resp)
-
 		if resp.StatusCode == http.StatusOK {
 			return Healthy
 		}
-
 		return Unhealthy
 	}
 }
@@ -317,11 +309,9 @@ func closeBody(resp *http.Response) {
 	if resp == nil {
 		return
 	}
-
 	if resp.Body == nil {
 		return
 	}
-
 	resp.Body.Close()
 }
 
