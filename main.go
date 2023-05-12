@@ -34,9 +34,11 @@ func main() {
 		healthStates:  map[int]HealthState{},
 		uptimePercent: map[int]float64{},
 	}
+	initialiseBubbleTea(m)
+}
 
+func initialiseBubbleTea(m model) {
 	p := tea.NewProgram(m)
-
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Failed to start the program: %v\n", err)
 		os.Exit(1)
