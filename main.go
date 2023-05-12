@@ -29,8 +29,8 @@ func main() {
 			5: "http://example5.com",
 			6: "http://example6.com",
 		},
-		healthStates:  make(map[int]HealthState),
-		uptimePercent: make(map[int]float64),
+		healthStates:  map[int]HealthState{},
+		uptimePercent: map[int]float64{},
 	}
 
 	p := tea.NewProgram(m)
@@ -88,7 +88,7 @@ func getHealthStateText(healthState HealthState) string {
 }
 
 func getHealthStateMapKeyedOnString() map[string]HealthState {
-	hsMap := make(map[string]HealthState)
+	hsMap := map[string]HealthState{}
 	for key, element := range getHealthStateMap() {
 		hsMap[element] = key
 	}
