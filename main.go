@@ -141,7 +141,7 @@ func (m model) View() string {
 			uptime = 0
 		}
 
-		boxStyleNotChecked :=
+		boxStyleHealthStateUnchecked :=
 			lipgloss.NewStyle().
 				Foreground(lipgloss.Color(colourNotChecked)).
 				BorderForeground(lipgloss.Color("228")).
@@ -154,7 +154,7 @@ func (m model) View() string {
 				MarginRight(boxMarginRight).
 				Width(boxWidth)
 
-		boxStyleGreen :=
+		boxStyleHealthStateHealthy :=
 			lipgloss.NewStyle().
 				Foreground(lipgloss.Color(colourGreen)).
 				BorderForeground(lipgloss.Color("228")).
@@ -167,7 +167,7 @@ func (m model) View() string {
 				MarginRight(boxMarginRight).
 				Width(boxWidth)
 
-		boxStyleAmber :=
+		boxStyleHealthStateInconclusive :=
 			lipgloss.NewStyle().
 				Foreground(lipgloss.Color(colourAmber)).
 				BorderForeground(lipgloss.Color("228")).
@@ -180,7 +180,7 @@ func (m model) View() string {
 				MarginRight(boxMarginRight).
 				Width(boxWidth)
 
-		boxStyleRed :=
+		boxStyleHealthStateUnhealthy :=
 			lipgloss.NewStyle().
 				Foreground(lipgloss.Color(colourRed)).
 				BorderForeground(lipgloss.Color("228")).
@@ -194,19 +194,19 @@ func (m model) View() string {
 				Width(boxWidth)
 
 		if m.selected == i {
-			boxStyleNotChecked = boxStyleNotChecked.BorderForeground(lipgloss.Color("205"))
+			boxStyleHealthStateUnchecked = boxStyleHealthStateUnchecked.BorderForeground(lipgloss.Color("205"))
 		}
 
 		boxContent := fmt.Sprintf("%s\nStatus: %s\nUptime: %.2f%%", m.endpoints[i], getHealthStateText(healthState), uptime)
 		switch healthState {
 		case Unchecked:
-			lgPanels[i-1] = boxStyleNotChecked.Render(boxContent)
+			lgPanels[i-1] = boxStyleHealthStateUnchecked.Render(boxContent)
 		case Healthy:
-			lgPanels[i-1] = boxStyleGreen.Render(boxContent)
+			lgPanels[i-1] = boxStyleHealthStateHealthy.Render(boxContent)
 		case Inconclusive:
-			lgPanels[i-1] = boxStyleAmber.Render(boxContent)
+			lgPanels[i-1] = boxStyleHealthStateInconclusive.Render(boxContent)
 		case Unhealthy:
-			lgPanels[i-1] = boxStyleRed.Render(boxContent)
+			lgPanels[i-1] = boxStyleHealthStateUnhealthy.Render(boxContent)
 		}
 	}
 
