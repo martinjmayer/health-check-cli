@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"math/rand"
 	"net/http"
 	"time"
@@ -109,22 +110,6 @@ func (m model) View() string {
 
 	const titleText = "API Health Check"
 
-	const colourNotChecked = "74"
-	const colourGreen = "35"
-	const colourAmber = "214"
-	const colourRed = "196"
-
-	const colourTitle = "63"
-
-	const boxPadding = 1
-	const boxMarginTop = 1
-	const boxMarginBottom = 1
-	const boxMarginLeft = 2
-	const boxMarginRight = 2
-	const boxWidth = 35
-
-	const numColumns = 3
-
 	statuses := m.healthStates
 	uptimePercent := m.uptimePercent
 
@@ -141,94 +126,30 @@ func (m model) View() string {
 			uptime = 0
 		}
 
-		boxStyleHealthStateUnchecked :=
-			lipgloss.NewStyle().
-				Foreground(lipgloss.Color(colourNotChecked)).
-				BorderForeground(lipgloss.Color("228")).
-				BorderBackground(lipgloss.Color(colourNotChecked)).
-				Border(lipgloss.RoundedBorder()).
-				Padding(boxPadding).
-				MarginTop(boxMarginTop).
-				MarginBottom(boxMarginBottom).
-				MarginLeft(boxMarginLeft).
-				MarginRight(boxMarginRight).
-				Width(boxWidth)
-
-		boxStyleHealthStateHealthy :=
-			lipgloss.NewStyle().
-				Foreground(lipgloss.Color(colourGreen)).
-				BorderForeground(lipgloss.Color("228")).
-				BorderBackground(lipgloss.Color(colourGreen)).
-				Border(lipgloss.RoundedBorder()).
-				Padding(boxPadding).
-				MarginTop(boxMarginTop).
-				MarginBottom(boxMarginBottom).
-				MarginLeft(boxMarginLeft).
-				MarginRight(boxMarginRight).
-				Width(boxWidth)
-
-		boxStyleHealthStateInconclusive :=
-			lipgloss.NewStyle().
-				Foreground(lipgloss.Color(colourAmber)).
-				BorderForeground(lipgloss.Color("228")).
-				BorderBackground(lipgloss.Color(colourAmber)).
-				Border(lipgloss.RoundedBorder()).
-				Padding(boxPadding).
-				MarginTop(boxMarginTop).
-				MarginBottom(boxMarginBottom).
-				MarginLeft(boxMarginLeft).
-				MarginRight(boxMarginRight).
-				Width(boxWidth)
-
-		boxStyleHealthStateUnhealthy :=
-			lipgloss.NewStyle().
-				Foreground(lipgloss.Color(colourRed)).
-				BorderForeground(lipgloss.Color("228")).
-				BorderBackground(lipgloss.Color(colourRed)).
-				Border(lipgloss.RoundedBorder()).
-				Padding(boxPadding).
-				MarginTop(boxMarginTop).
-				MarginBottom(boxMarginBottom).
-				MarginLeft(boxMarginLeft).
-				MarginRight(boxMarginRight).
-				Width(boxWidth)
+		boxStyle := getEndpointBoxStyle(healthState)
 
 		if m.selected == i {
-			boxStyleHealthStateUnchecked = boxStyleHealthStateUnchecked.BorderForeground(lipgloss.Color("205"))
+			boxStyle = boxStyle.BorderForeground(lipgloss.Color("205"))
 		}
 
 		boxContent := fmt.Sprintf("%s\nStatus: %s\nUptime: %.2f%%", m.endpoints[i], getHealthStateText(healthState), uptime)
+
 		switch healthState {
 		case Unchecked:
-			lgPanels[i-1] = boxStyleHealthStateUnchecked.Render(boxContent)
+			lgPanels[i-1] = boxStyle.Render(boxContent)
 		case Healthy:
-			lgPanels[i-1] = boxStyleHealthStateHealthy.Render(boxContent)
+			lgPanels[i-1] = boxStyle.Render(boxContent)
 		case Inconclusive:
-			lgPanels[i-1] = boxStyleHealthStateInconclusive.Render(boxContent)
+			lgPanels[i-1] = boxStyle.Render(boxContent)
 		case Unhealthy:
-			lgPanels[i-1] = boxStyleHealthStateUnhealthy.Render(boxContent)
+			lgPanels[i-1] = boxStyle.Render(boxContent)
 		}
 	}
 
-	titleBoxWidth := (boxWidth * numColumns) + ((boxMarginLeft + boxMarginRight) * (numColumns))
-	boxStyleTitle :=
-		lipgloss.NewStyle().
-			Foreground(lipgloss.Color(colourTitle)).
-			BorderForeground(lipgloss.Color("228")).
-			BorderBackground(lipgloss.Color(colourTitle)).
-			Border(lipgloss.RoundedBorder()).
-			Padding(boxPadding).
-			MarginTop(boxMarginTop).
-			MarginBottom(boxMarginBottom).
-			MarginLeft(boxMarginLeft).
-			MarginRight(boxMarginRight).
-			Align(lipgloss.Center).
-			Width(titleBoxWidth)
-
-	title := boxStyleTitle
+	titleStyle := getTitleBoxStyle()
 
 	// Title
-	s := title.Render(titleText)
+	s := titleStyle.Render(titleText)
 
 	// Services - first row
 	s += lipgloss.JoinHorizontal(lipgloss.Bottom, lgPanels[0], lgPanels[1], lgPanels[2])
@@ -237,6 +158,107 @@ func (m model) View() string {
 	s += lipgloss.JoinHorizontal(lipgloss.Bottom, lgPanels[3], lgPanels[4], lgPanels[5])
 
 	return s
+}
+
+const colourNotChecked = "74"
+const colourGreen = "35"
+const colourAmber = "214"
+const colourRed = "196"
+
+const colourTitle = "63"
+
+const boxPadding = 1
+const boxMarginTop = 1
+const boxMarginBottom = 1
+const boxMarginLeft = 2
+const boxMarginRight = 2
+const boxWidth = 35
+
+const numColumns = 3
+
+var titleBoxWidth = (boxWidth * numColumns) + ((boxMarginLeft + boxMarginRight) * (numColumns))
+
+func getTitleBoxStyle() lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color(colourTitle)).
+		BorderForeground(lipgloss.Color("228")).
+		BorderBackground(lipgloss.Color(colourTitle)).
+		Border(lipgloss.RoundedBorder()).
+		Padding(boxPadding).
+		MarginTop(boxMarginTop).
+		MarginBottom(boxMarginBottom).
+		MarginLeft(boxMarginLeft).
+		MarginRight(boxMarginRight).
+		Align(lipgloss.Center).
+		Width(titleBoxWidth)
+}
+
+func getEndpointBoxStyle(healthState HealthState) lipgloss.Style {
+
+	boxStyleHealthStateUnchecked :=
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colourNotChecked)).
+			BorderForeground(lipgloss.Color("228")).
+			BorderBackground(lipgloss.Color(colourNotChecked)).
+			Border(lipgloss.RoundedBorder()).
+			Padding(boxPadding).
+			MarginTop(boxMarginTop).
+			MarginBottom(boxMarginBottom).
+			MarginLeft(boxMarginLeft).
+			MarginRight(boxMarginRight).
+			Width(boxWidth)
+
+	boxStyleHealthStateHealthy :=
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colourGreen)).
+			BorderForeground(lipgloss.Color("228")).
+			BorderBackground(lipgloss.Color(colourGreen)).
+			Border(lipgloss.RoundedBorder()).
+			Padding(boxPadding).
+			MarginTop(boxMarginTop).
+			MarginBottom(boxMarginBottom).
+			MarginLeft(boxMarginLeft).
+			MarginRight(boxMarginRight).
+			Width(boxWidth)
+
+	boxStyleHealthStateInconclusive :=
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colourAmber)).
+			BorderForeground(lipgloss.Color("228")).
+			BorderBackground(lipgloss.Color(colourAmber)).
+			Border(lipgloss.RoundedBorder()).
+			Padding(boxPadding).
+			MarginTop(boxMarginTop).
+			MarginBottom(boxMarginBottom).
+			MarginLeft(boxMarginLeft).
+			MarginRight(boxMarginRight).
+			Width(boxWidth)
+
+	boxStyleHealthStateUnhealthy :=
+		lipgloss.NewStyle().
+			Foreground(lipgloss.Color(colourRed)).
+			BorderForeground(lipgloss.Color("228")).
+			BorderBackground(lipgloss.Color(colourRed)).
+			Border(lipgloss.RoundedBorder()).
+			Padding(boxPadding).
+			MarginTop(boxMarginTop).
+			MarginBottom(boxMarginBottom).
+			MarginLeft(boxMarginLeft).
+			MarginRight(boxMarginRight).
+			Width(boxWidth)
+
+	switch healthState {
+	case Unchecked:
+		return boxStyleHealthStateUnchecked
+	case Healthy:
+		return boxStyleHealthStateHealthy
+	case Inconclusive:
+		return boxStyleHealthStateInconclusive
+	case Unhealthy:
+		return boxStyleHealthStateUnhealthy
+	}
+
+	panic(errors.New(fmt.Sprintf("Unknown Health State '%d'", healthState)))
 }
 
 func getDebugUptime() map[int]float64 {
