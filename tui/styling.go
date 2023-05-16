@@ -8,17 +8,17 @@ import (
 	"health-check-tui/theme"
 )
 
-func getEndpointBoxStyle(healthState api_calls.HealthState) lipgloss.Style {
+func getEndpointBoxStyle(healthState api_calls.HealthState) (lipgloss.Style, error) {
 
 	switch healthState {
 	case api_calls.Unchecked:
-		return theme.GetEndpointUncheckedBoxStyle()
+		return theme.GetEndpointUncheckedBoxStyle(), nil
 	case api_calls.Healthy:
-		return theme.GetEndpointHealthyBoxStyle()
+		return theme.GetEndpointHealthyBoxStyle(), nil
 	case api_calls.Unhealthy:
-		return theme.GetEndpointUnhealthyBoxStyle()
+		return theme.GetEndpointUnhealthyBoxStyle(), nil
 	case api_calls.Inconclusive:
-		return theme.GetEndpointInconclusiveBoxStyle()
+		return theme.GetEndpointInconclusiveBoxStyle(), nil
 	}
 
 	panic(

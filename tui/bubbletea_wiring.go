@@ -117,7 +117,12 @@ func (m model) View() string {
 			uptime = 0
 		}
 
-		boxStyle := getEndpointBoxStyle(healthState)
+		boxStyle, err := getEndpointBoxStyle(healthState)
+
+		if err != nil {
+			fmt.Printf("Error retrieving endpoint box style for heath state '%s': '%s'", api_calls.GetHealthStateText(healthState), err)
+		}
+
 		if m.selected == i {
 			boxStyle = boxStyle.BorderForeground(lipgloss.Color("205"))
 		}
