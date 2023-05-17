@@ -5,8 +5,10 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"health-check-tui/api_calls"
+	"health-check-tui/config_and_secrets"
 	"health-check-tui/debug_helpers"
 	"health-check-tui/theme"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -19,46 +21,41 @@ type model struct {
 	selected        int
 }
 
+var _configReader config_and_secrets.ConfReader
+var _secretReader config_and_secrets.SecretReader
+
 type tickMsg time.Time
 
-func InitialiseBubbleTea(configFile string) {
+func InitialiseBubbleTea(
+	configReader config_and_secrets.ConfReader,
+	secretReader config_and_secrets.SecretReader) error {
+
+	_configReader = configReader
+	_secretReader = secretReader
+
+	result, err := _configReader.ReadEndpointsConfig()
+
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
 	m := model{
 		// replace this with content from the config file
-		endpointConfigs: map[int]api_calls.EndpointConfig{
-			1: {
-				Url:                "http://example1.com",
-				ApiKeySecretId:     "api1ApiKey",
-				ApiKeyRequestParam: "api-key"},
-			2: {
-				Url:                "http://example2.com",
-				ApiKeySecretId:     "api2ApiKey",
-				ApiKeyRequestParam: "api-key"},
-			3: {
-				Url:                "http://example3.com",
-				ApiKeySecretId:     "api3ApiKey",
-				ApiKeyRequestParam: "api-key"},
-			4: {
-				Url:                "http://example4.com",
-				ApiKeySecretId:     "api4ApiKey",
-				ApiKeyRequestParam: "api-key"},
-			5: {
-				Url:                "http://example5.com",
-				ApiKeySecretId:     "api5ApiKey",
-				ApiKeyRequestParam: "api-key"},
-			6: {
-				Url:                "http://example6.com",
-				ApiKeySecretId:     "api6ApiKey",
-				ApiKeyRequestParam: "api-key"},
-		},
-		healthStates:  map[int]api_calls.HealthState{},
-		uptimePercent: map[int]float64{},
+		endpointConfigs: result,
+		healthStates:    map[int]api_calls.HealthState{},
+		uptimePercent:   map[int]float64{},
 	}
+
+	_secretReader.ReadStringSecret("")
 
 	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Failed to start the program: %v\n", err)
 		os.Exit(1)
 	}
+
+	return nil
 }
 
 func (m model) Init() tea.Cmd {
@@ -103,8 +100,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	var lgPanels [6]string
 	const titleText = "API Health Check"
-	statuses := debug_helpers.GetDebugResponses()   // m.healthStates
-	uptimePercent := debug_helpers.GetDebugUptime() //m.uptimePercent
+	statuses, debugResponsesErr := debug_helpers.GetDebugResponses() // m.healthStates
+	if debugResponsesErr != nil {
+		log.Fatal(debugResponsesErr)
+		return ""
+	}
+	uptimePercent, uptimeDebugErr := debug_helpers.GetDebugUptime() //m.uptimePercent
+	if uptimeDebugErr != nil {
+		log.Fatal(uptimeDebugErr)
+		return ""
+	}
 
 	for i := 1; i <= 6; i++ {
 		healthState, ok := statuses[i]

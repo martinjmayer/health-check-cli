@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"health-check-tui/api_calls"
 	"health-check-tui/theme"
+	"log"
 )
 
 func getEndpointBoxStyle(healthState api_calls.HealthState) (lipgloss.Style, error) {
@@ -20,10 +21,7 @@ func getEndpointBoxStyle(healthState api_calls.HealthState) (lipgloss.Style, err
 	case api_calls.Inconclusive:
 		return theme.GetEndpointInconclusiveBoxStyle(), nil
 	}
-
-	panic(
-		errors.New(
-			fmt.Sprintf(
-				"Unknown Health State '%d'",
-				healthState)))
+	err := errors.New(fmt.Sprintf("Unknown Health State '%d'", healthState))
+	log.Fatal(err)
+	return theme.GetEndpointUncheckedBoxStyle(), err
 }

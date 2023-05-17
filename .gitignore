@@ -2,6 +2,7 @@
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
 # Binaries for programs and plugins
+health-check-tui
 *.exe
 *.exe~
 *.dll
@@ -22,3 +23,6 @@ go.work
 
 # IDEs
 .idea/
+
+# Misc
+.DS_Store

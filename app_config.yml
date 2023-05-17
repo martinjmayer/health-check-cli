@@ -1,0 +1,27 @@
+---
+type: yml
+Endpoints:
+  -
+      Url: "http://example1.com"
+      ApiKeySecretId: "api1ApiKey"
+      ApiKeyRequestParam: "api-key"
+  -
+      Url: "http://example2.com"
+      ApiKeySecretId: "api2ApiKey"
+      ApiKeyRequestParam: "api-key"
+  -
+      Url: "http://example3.com"
+      ApiKeySecretId: "api3ApiKey"
+      ApiKeyRequestParam: "api-key"
+  -
+      Url: "http://example4.com"
+      ApiKeySecretId: "api4ApiKey"
+      ApiKeyRequestParam: "api-key"
+  -
+      Url: "http://example5.com"
+      ApiKeySecretId: "api5ApiKey"
+      ApiKeyRequestParam: "api-key"
+  -
+      Url: "http://example6.com"
+      ApiKeySecretId: "api6ApiKey"
+      ApiKeyRequestParam: "api-key"
